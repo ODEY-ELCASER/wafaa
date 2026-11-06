@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glowing Red Heart for Nur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    /* Pure deep crimson atmosphere */
+    body {
+      background: radial-gradient(circle at center, #260209 0%, #120104 70%, #050002 100%);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Central Arabic Name Styling - Radiant Neon Red Glow */
+    .center-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      pointer-events: none;
+      animation: heartbeat 1.5s ease-in-out infinite;
+      opacity: 0;
+      transition: opacity 1.8s ease-in-out;
+    }
+
+    .center-content.visible {
+      opacity: 1;
+    }
+
+    .name-title {
+      font-family: 'Amiri', 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+      font-size: 4.6rem;
+      font-weight: 700;
+      color: #fff1f2;
+      letter-spacing: 0;
+      direction: rtl;
+      line-height: 1.1;
+      text-shadow:
+        0 0 12px #ff2b56,
+        0 0 25px #ff1744,
+        0 0 55px #e50914,
+        0 0 95px #b70912,
+        0 0 145px #700007;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% {
+        transform: scale(0.96);
+      }
+      30% {
+        transform: scale(1.06);
+      }
+      45% {
+        transform: scale(1.01);
+      }
+      60% {
+        transform: scale(1.07);
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div class="center-content" id="centerContent">
+    <div class="name-title" id="nameText" lang="ar">نور</div>
+  </div>
+
+  <script>
+    // ==============================================
+    // PURE VIBRANT RED PALETTE & CONFIGURATION
+    // ==============================================
+    const PURE_RED_PALETTE = [
+      '#ffe4e6', // White-hot ruby highlight
+      '#fca5a5', // Scarlet spark
+      '#f87171', // Bright coral-red
+      '#ef4444', // Vibrant pure red
+      '#dc2626', // Classic deep crimson
+      '#b91c1c', // Ruby red
+      '#ff1744', // Electric neon red
+      '#ffffff'  // Pure star flare
+    ];
+
+    const CONFIG = {
+      totalParticles: 1650, // Dense, full heart
+      scale: 16,            // Size of the heart
+      ambientCount: 80,     // Floating cosmic dust
+      revealDuration: 2800  // Milliseconds to build from bottom to top
+    };
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const centerContent = document.getElementById('centerContent');
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    // Parametric mathematical formula for heart curve
+    function getHeartPoint(t) {
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+      return { x, y };
+    }
+
+    class FullHeartParticle {
+      constructor(index, total) {
+        const isPerimeter = index < total * 0.42;
+
+        this.t = (Math.random() * 2 - 1) * Math.PI;
+        const pt = getHeartPoint(this.t);
+
+        if (isPerimeter) {
+          // Sharp outer edge
+          this.r = 0.96 + Math.random() * 0.1;
+          this.size = Math.random() * 2.2 + 1.8;
+          this.color = Math.random() > 0.35 ? '#ff1744' : '#ef4444';
+        } else {
+          // Dense interior fill
+          this.r = Math.sqrt(Math.random()) * 0.65 + 0.35;
+          this.size = Math.random() * 2.0 + 1.2;
+          this.color = PURE_RED_PALETTE[Math.floor(Math.random() * PURE_RED_PALETTE.length)];
+        }
+
+        this.baseX = pt.x * CONFIG.scale * this.r;
+        this.baseY = pt.y * CONFIG.scale * this.r;
+
+        // Micro texture scatter
+        this.baseX += (Math.random() - 0.5) * 8;
+        this.baseY += (Math.random() - 0.5) * 8;
+
+        // ==============================================================
+        // CLEAR ZONE BUFFER: Prevent particles from touching "نور"
+        // ==============================================================
+        const bufferRadiusX = 140; // horizontal buffer
+        const bufferRadiusY = 80;  // vertical buffer
+        let safetyAttempts = 0;
+
+        while (safetyAttempts < 25) {
+          const insideClearZone = Math.pow(this.baseX / bufferRadiusX, 2) + Math.pow(this.baseY / bufferRadiusY, 2) < 1.0;
+          if (!insideClearZone) break;
+
+          // Push outward toward outer regions so it never covers or touches the text
+          this.r = 0.62 + Math.random() * 0.38;
+          this.baseX = pt.x * CONFIG.scale * this.r + (Math.random() - 0.5) * 8;
+          this.baseY = pt.y * CONFIG.scale * this.r + (Math.random() - 0.5) * 8;
+          safetyAttempts++;
+        }
+
+        this.x = this.baseX;
+        this.y = this.baseY;
+
+        // Normalized height: 0 at exact bottom tip (+17.5*scale), 1 at highest lobe (-17.5*scale)
+        const minY = -17.5 * CONFIG.scale;
+        const maxY = 17.5 * CONFIG.scale;
+        this.bottomToTopOrder = 1 - (this.baseY - minY) / (maxY - minY);
+        this.bottomToTopOrder = Math.max(0, Math.min(1, this.bottomToTopOrder));
+
+        this.alpha = Math.random() * 0.5 + 0.5;
+        this.glow = Math.random() * 15 + 9;
+      }
+
+      update(beat) {
+        const targetX = this.baseX * beat;
+        const targetY = this.baseY * beat;
+
+        this.x += (targetX - this.x) * 0.1;
+        this.y += (targetY - this.y) * 0.1;
+
+        // Ambient micro float
+        this.x += (Math.random() - 0.5) * 0.7;
+        this.y += (Math.random() - 0.5) * 0.7;
+      }
+
+      draw(cx, cy, revealProgress) {
+        // Draw in order from bottom to top
+        if (this.bottomToTopOrder > revealProgress) {
+          return;
+        }
+
+        const edgeDistance = revealProgress - this.bottomToTopOrder;
+        const isIgniting = edgeDistance < 0.08 && revealProgress < 1.0;
+
+        ctx.save();
+        if (isIgniting) {
+          ctx.globalAlpha = 1.0;
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowBlur = 24;
+          ctx.shadowColor = '#fca5a5';
+          ctx.beginPath();
+          ctx.arc(cx + this.x, cy + this.y, this.size * 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.globalAlpha = this.alpha;
+          ctx.fillStyle = this.color;
+          ctx.shadowBlur = this.glow;
+          ctx.shadowColor = this.color;
+          ctx.beginPath();
+          ctx.arc(cx + this.x, cy + this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Floating ambient cosmic dust
+    class AmbientDust {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.size = Math.random() * 1.6 + 0.6;
+        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.speedY = -Math.random() * 0.5 - 0.15;
+        this.alpha = Math.random() * 0.45 + 0.1;
+        this.color = Math.random() > 0.5 ? '#dc2626' : '#b91c1c';
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.y < -10 || this.x < -10 || this.x > width + 10) {
+          this.reset();
+          this.y = height + 10;
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Spark burst effects
+    class PureRedSpark {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 2;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.life = 1;
+        this.decay = Math.random() * 0.025 + 0.015;
+        this.color = PURE_RED_PALETTE[Math.floor(Math.random() * PURE_RED_PALETTE.length)];
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.95;
+        this.vy *= 0.95;
+        this.life -= this.decay;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Initialize particles
+    const heartParticles = Array.from({ length: CONFIG.totalParticles }, (_, i) => 
+      new FullHeartParticle(i, CONFIG.totalParticles)
+    );
+    const ambientDust = Array.from({ length: CONFIG.ambientCount }, () => new AmbientDust());
+    const sparks = [];
+
+    // Progressive bottom-to-top reveal controller
+    let revealStart = performance.now();
+    let revealProgress = 0;
+
+    function restartReveal() {
+      revealStart = performance.now();
+      revealProgress = 0;
+      centerContent.classList.remove('visible');
+    }
+
+    window.addEventListener('pointerdown', (e) => {
+      for (let i = 0; i < 28; i++) {
+        sparks.push(new PureRedSpark(e.clientX, e.clientY));
+      }
+      const dx = e.clientX - width / 2;
+      const dy = e.clientY - height / 2;
+      if (Math.hypot(dx, dy) < 80 && revealProgress >= 1) {
+        restartReveal();
+      }
+    });
+
+    let frame = 0;
+
+    function animate(now) {
+      const elapsed = now - revealStart;
+      revealProgress = Math.min(1.0, elapsed / CONFIG.revealDuration);
+
+      if (revealProgress > 0.48 && !centerContent.classList.contains('visible')) {
+        centerContent.classList.add('visible');
+      }
+
+      // Smooth motion trails in deep crimson backdrop
+      ctx.fillStyle = 'rgba(18, 1, 4, 0.28)';
+      ctx.fillRect(0, 0, width, height);
+
+      frame += 0.045;
+      const beat = 1 + Math.sin(frame) * 0.075 + Math.pow(Math.sin(frame * 2), 4) * 0.055;
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      for (const d of ambientDust) {
+        d.update();
+        d.draw();
+      }
+
+      for (const p of heartParticles) {
+        p.update(beat);
+        p.draw(centerX, centerY, revealProgress);
+      }
+
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.update();
+        s.draw();
+        if (s.life <= 0) {
+          sparks.splice(i, 1);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
